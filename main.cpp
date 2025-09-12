@@ -3,6 +3,7 @@
 #include "qt3dviewer.h"
 #include "geo3dobjectset.h"
 #include "cylinderobject.h"
+#include "faceobject.h"
 
 int main(int argc, char *argv[])
 {
@@ -34,6 +35,22 @@ int main(int argc, char *argv[])
     cyl3->setDiffuseColor(QColor(Qt::green));
     cyl3->setVisible(true);
     originalSet->addObject("greenCylinder", cyl3);
+
+    // Create a rectangular face
+    FaceObject* face = new FaceObject(1.0f); // elevation = 1.0
+    face->addVertex(-2.0f, -2.0f);  // bottom-left
+    face->addVertex(2.0f, -2.0f);   // bottom-right
+    face->addVertex(2.0f, 2.0f);    // top-right
+    face->addVertex(-2.0f, 2.0f);   // top-left
+
+    // Or create with vertices directly
+    QVector<QVector2D> vertices;
+    vertices << QVector2D(-1, -1) << QVector2D(1, -1) << QVector2D(0, 1);
+    FaceObject* triangle = new FaceObject(vertices, 0.5f); // triangular face
+
+    // Add to object set
+    originalSet->addObject("floor", face);
+    originalSet->addObject("triangle", triangle);
 
     qDebug() << "Created object set with" << originalSet->count() << "objects";
     qDebug() << "Object names:" << originalSet->getObjectNames();
@@ -86,6 +103,8 @@ int main(int argc, char *argv[])
 
     qDebug() << "3D Viewer opened. Click 'Show 3D Objects' to see the loaded scene.";
     qDebug() << "You should see 3 cylinders with different colors, positions, and orientations.";
+
+
 
     return app.exec();
 }

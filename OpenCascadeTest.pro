@@ -4,6 +4,7 @@ CONFIG += c++17
 
 SOURCES += main.cpp \
     cylinderobject.cpp \
+    faceobject.cpp \
     geo3dobject.cpp \
     geo3dobjectset.cpp \
     qt3dviewer.cpp
@@ -12,6 +13,7 @@ TARGET = qt3d_cylinder_viewer
 
 HEADERS += \
     cylinderobject.h \
+    faceobject.h \
     geo3dobject.h \
     geo3dobjectset.h \
     qt3dviewer.h

@@ -1,6 +1,7 @@
 #include "qt3dviewer.h"
 #include "geo3dobjectset.h"
 #include "cylinderobject.h"
+#include "tubeobject.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -70,33 +71,50 @@ void Qt3DViewer::showObjects()
 
         // Create entities for demo objects
         demoSet->createEntities(rootEntity);
-
-        // Clean up demo set (but not the objects, as they're now owned by Qt3D)
-        // Note: In a real application, you'd need better memory management
+        m_objectSet = demoSet;  // Use demo set for camera calculation
     } else {
         // Use the provided object set
         m_objectSet->createEntities(rootEntity);
     }
 
-    // Camera
+    // Calculate scene bounds and center
+    QVector3D minBound, maxBound, center;
+    calculateSceneBounds(minBound, maxBound, center);
+
+    // Calculate scene size
+    QVector3D sceneSize = maxBound - minBound;
+    float maxDimension = qMax(qMax(sceneSize.x(), sceneSize.y()), sceneSize.z());
+
+    // Calculate camera distance (with some margin)
+    float cameraDistance = maxDimension * 1.5f;
+
+    // Camera setup with automatic positioning
     Qt3DRender::QCamera *cameraEntity = view->camera();
-    cameraEntity->lens()->setPerspectiveProjection(45.0f, 16.0f/9.0f, 0.1f, 1000.0f);
-    cameraEntity->setPosition(QVector3D(0, 0, 8.0f));
+    cameraEntity->lens()->setPerspectiveProjection(45.0f, 16.0f/9.0f, 0.1f, cameraDistance * 10.0f);
+
+    // Position camera to look at the scene center from an angle
+    QVector3D cameraPos = center + QVector3D(cameraDistance * 0.7f, cameraDistance * 0.5f, cameraDistance * 0.7f);
+    cameraEntity->setPosition(cameraPos);
     cameraEntity->setUpVector(QVector3D(0, 1, 0));
-    cameraEntity->setViewCenter(QVector3D(0, 0, 0));
+    cameraEntity->setViewCenter(center);
+
+    qDebug() << "Scene bounds - Min:" << minBound << "Max:" << maxBound;
+    qDebug() << "Scene center:" << center;
+    qDebug() << "Scene size:" << sceneSize;
+    qDebug() << "Camera distance:" << cameraDistance;
 
     // Camera controller
     Qt3DExtras::QOrbitCameraController *camController = new Qt3DExtras::QOrbitCameraController(rootEntity);
     camController->setCamera(cameraEntity);
 
-    // Light
+    // Light - position it relative to scene
     Qt3DCore::QEntity *lightEntity = new Qt3DCore::QEntity(rootEntity);
     Qt3DRender::QPointLight *light = new Qt3DRender::QPointLight(lightEntity);
     light->setColor("white");
-    light->setIntensity(1);
+    light->setIntensity(1.5f);
     lightEntity->addComponent(light);
     Qt3DCore::QTransform *lightTransform = new Qt3DCore::QTransform(lightEntity);
-    lightTransform->setTranslation(QVector3D(0, 0, 10));
+    lightTransform->setTranslation(center + QVector3D(maxDimension, maxDimension, maxDimension));
     lightEntity->addComponent(lightTransform);
 
     // Set root entity
@@ -136,4 +154,64 @@ void Qt3DViewer::setupUI()
     layout->addWidget(exitButton);
 
     layout->addStretch();
+}
+
+void Qt3DViewer::calculateSceneBounds(QVector3D& minBound, QVector3D& maxBound, QVector3D& center)
+{
+    if (!m_objectSet || m_objectSet->isEmpty()) {
+        minBound = QVector3D(-5, -5, -5);
+        maxBound = QVector3D(5, 5, 5);
+        center = QVector3D(0, 0, 0);
+        return;
+    }
+
+    bool firstObject = true;
+    minBound = QVector3D(0, 0, 0);
+    maxBound = QVector3D(0, 0, 0);
+
+    // Iterate through all objects
+    for (auto it = m_objectSet->constBegin(); it != m_objectSet->constEnd(); ++it) {
+        Geo3DObject* obj = it.value();
+        if (!obj) continue;
+
+        QVector3D pos = obj->getPosition();
+        QVector3D scale = obj->getScale();
+
+        // Estimate object bounds based on type
+        float objRadius = 0.0f;
+        float objHeight = 0.0f;
+
+        // Try to cast to different object types to get dimensions
+        if (CylinderObject* cyl = dynamic_cast<CylinderObject*>(obj)) {
+            objRadius = cyl->getRadius() * qMax(scale.x(), scale.z());
+            objHeight = cyl->getLength() * scale.y();
+        } else if (TubeObject* tube = dynamic_cast<TubeObject*>(obj)) {
+            objRadius = tube->getOuterRadius() * qMax(scale.x(), scale.z());
+            objHeight = tube->getHeight() * scale.y();
+        } else {
+            // Default bounds for unknown objects
+            objRadius = 1.0f * qMax(scale.x(), scale.z());
+            objHeight = 2.0f * scale.y();
+        }
+
+        // Calculate object's bounding box
+        QVector3D objMin = pos - QVector3D(objRadius, objHeight/2, objRadius);
+        QVector3D objMax = pos + QVector3D(objRadius, objHeight/2, objRadius);
+
+        if (firstObject) {
+            minBound = objMin;
+            maxBound = objMax;
+            firstObject = false;
+        } else {
+            minBound.setX(qMin(minBound.x(), objMin.x()));
+            minBound.setY(qMin(minBound.y(), objMin.y()));
+            minBound.setZ(qMin(minBound.z(), objMin.z()));
+
+            maxBound.setX(qMax(maxBound.x(), objMax.x()));
+            maxBound.setY(qMax(maxBound.y(), objMax.y()));
+            maxBound.setZ(qMax(maxBound.z(), objMax.z()));
+        }
+    }
+
+    center = (minBound + maxBound) / 2.0f;
 }

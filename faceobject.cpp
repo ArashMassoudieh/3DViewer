@@ -205,6 +205,7 @@ QJsonObject FaceObject::toJson() const
     json["material"] = material;
 
     json["visible"] = isVisible();
+    json["opacity"] = getOpacity();
 
     // Face-specific properties
     QJsonObject face;
@@ -267,6 +268,10 @@ bool FaceObject::fromJson(const QJsonObject& json)
 
     if (json.contains("visible")) {
         setVisible(json["visible"].toBool());
+    }
+
+    if (json.contains("opacity")) {
+        setOpacity(json["opacity"].toDouble());
     }
 
     // Load face-specific properties

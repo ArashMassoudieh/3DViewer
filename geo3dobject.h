@@ -14,9 +14,11 @@ class QTransform;
 }
 namespace Qt3DRender {
 class QGeometryRenderer;
+
 }
 namespace Qt3DExtras {
 class QPhongMaterial;
+class QPhongAlphaMaterial;
 }
 QT_END_NAMESPACE
 
@@ -52,6 +54,9 @@ public:
 
     float getShininess() const;
     void setShininess(float shininess);
+
+    float getOpacity() const;
+    void setOpacity(float opacity);
 
     // Qt3D Entity creation
     virtual Qt3DCore::QEntity* createEntity(Qt3DCore::QEntity* parent = nullptr);
@@ -95,6 +100,7 @@ protected:
     virtual void updateTransform();
     virtual void updateMaterial();
 
+
 private:
     // Transform data
     QVector3D m_position;
@@ -107,13 +113,17 @@ private:
     QColor m_specularColor;
     float m_shininess;
 
+    float m_opacity;
+
     bool m_visible;
 
     // Qt3D components (created when needed)
     Qt3DCore::QEntity* m_entity;
     Qt3DCore::QTransform* m_transform;
-    Qt3DExtras::QPhongMaterial* m_material;
+    Qt3DExtras::QPhongAlphaMaterial* m_material;
     Qt3DRender::QGeometryRenderer* m_geometryRenderer;
+
+
 };
 
 #endif // GEO3DOBJECT_H

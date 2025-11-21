@@ -4,6 +4,8 @@
 #include <Qt3DCore/QTransform>
 #include <Qt3DRender/QGeometryRenderer>
 #include <Qt3DExtras/QPhongMaterial>
+#include <Qt3DExtras/QPhongAlphaMaterial>
+
 
 Geo3DObject::Geo3DObject()
     : m_position(0.0f, 0.0f, 0.0f)
@@ -13,12 +15,14 @@ Geo3DObject::Geo3DObject()
     , m_ambientColor(QColor(68, 51, 17))   // Darker brown
     , m_specularColor(QColor(255, 255, 255)) // White
     , m_shininess(50.0f)
+    , m_opacity(1.0f)
     , m_visible(true)
     , m_entity(nullptr)
     , m_transform(nullptr)
     , m_material(nullptr)
     , m_geometryRenderer(nullptr)
 {
+
 }
 
 Geo3DObject::~Geo3DObject()
@@ -124,6 +128,17 @@ void Geo3DObject::setShininess(float shininess)
     updateMaterial();
 }
 
+float Geo3DObject::getOpacity() const
+{
+    return m_opacity;
+}
+
+void Geo3DObject::setOpacity(float opacity)
+{
+    m_opacity = qBound(0.0f, opacity, 1.0f);
+    updateMaterial();
+}
+
 bool Geo3DObject::isVisible() const
 {
     return m_visible;
@@ -152,9 +167,12 @@ Qt3DCore::QEntity* Geo3DObject::createEntity(Qt3DCore::QEntity* parent)
         m_entity->addComponent(m_transform);
 
         // Create material
-        m_material = new Qt3DExtras::QPhongMaterial();
+        m_material = new Qt3DExtras::QPhongAlphaMaterial();
         updateMaterial();
         m_entity->addComponent(m_material);
+
+
+        m_entity->setEnabled(m_visible);
 
         // Set visibility
         m_entity->setEnabled(m_visible);
@@ -177,8 +195,14 @@ void Geo3DObject::updateTransform()
 void Geo3DObject::updateMaterial()
 {
     if (m_material) {
-        m_material->setDiffuse(m_diffuseColor);
-        m_material->setAmbient(m_ambientColor);
+        QColor diffuse = m_diffuseColor;
+        diffuse.setAlphaF(m_opacity);
+
+        QColor ambient = m_ambientColor;
+        ambient.setAlphaF(m_opacity);
+
+        m_material->setDiffuse(diffuse);
+        m_material->setAmbient(ambient);
         m_material->setSpecular(m_specularColor);
         m_material->setShininess(m_shininess);
     }

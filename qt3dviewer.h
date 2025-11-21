@@ -37,6 +37,8 @@ private slots:
 private:
     void setupUI();
 
+    void calculateSceneBounds(QVector3D& minBound, QVector3D& maxBound, QVector3D& center);
+
     Geo3DObjectSet* m_objectSet;
 };
 

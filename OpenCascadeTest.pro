@@ -7,7 +7,8 @@ SOURCES += main.cpp \
     faceobject.cpp \
     geo3dobject.cpp \
     geo3dobjectset.cpp \
-    qt3dviewer.cpp
+    qt3dviewer.cpp \
+    tubeobject.cpp
 
 TARGET = qt3d_cylinder_viewer
 
@@ -16,4 +17,5 @@ HEADERS += \
     faceobject.h \
     geo3dobject.h \
     geo3dobjectset.h \
-    qt3dviewer.h
+    qt3dviewer.h \
+    tubeobject.h
